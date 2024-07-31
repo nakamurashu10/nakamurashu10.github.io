@@ -86,6 +86,12 @@ asr.onresult = function(event) {
                 speechSynthesis.speak(tts); // 応答を再生
                 output += '<span style="color:#f00;">' + response[key] + '</span><br>';
                 foundResponse = true;
+
+                // "終了", "ありがとう", "さようなら" の場合は音声認識を停止
+                if (["終了", "さようなら", "ありがとう"].includes(key)) {
+                    asr.stop();
+                    return;
+                }
             }
         });
 
