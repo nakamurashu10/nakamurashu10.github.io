@@ -1,0 +1,148 @@
+<html lang="ja">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta http-equiv="Content-Script-Type" content="text/javascript">
+<title>音声対話プログラム</title>
+</head>
+<body>
+
+<h1>音声対話プログラム</h1>
+
+<p>
+<button id="startButton">start</button>
+<button id="stopButton">stop</button>
+</p>
+
+<p>
+<div id="resultOutput"></div>
+</p>
+
+<script>
+// 応答の定義（ハッシュ）
+var response = {
+    "あなた,誰": "わたしはアレクサではありません",
+    "名前は": "内緒です",
+    "何歳": "え、わたし、何歳にみえますか",
+    "元気": "元気ですよー",
+    "好きな,色": "オレンジです",
+    "夢は": "世界を冒険することです",
+    "好きな,スポーツ": "けん玉です",
+    "好きな,食べ物": "焼肉です",
+    "和歌山,天気": "和歌山の天気はたぶん晴れでしょう",
+    "大阪,天気": "大阪の天気は雨です。",
+    "明日,天気": "明日の天気は曇りだと思います",
+    "明日,和歌山,天気": "明日の和歌山の天気はずばり雪です",
+    "終了": "終了します",
+    "さようなら": "終了します",
+    "ありがとう": "終了します"
+};
+
+const startButton = document.querySelector('#startButton'); // 開始ボタン
+const stopButton = document.querySelector('#stopButton'); // 停止ボタン
+const resultOutput = document.querySelector('#resultOutput'); // 結果出力エリア
+
+if (!'SpeechSynthesisUtterance' in window) {
+    alert("あなたのブラウザはSpeech Synthesis APIに未対応です。");
+}
+const tts = new SpeechSynthesisUtterance(); // TTSインスタンスを生成
+tts.lang = "ja-JP"; // 言語(日本語)、英語の場合はen-US
+tts.rate = 1.0; // 速度
+tts.pitch = 1.0; // 声の高さ
+tts.volume = 1.0; // 音量
+
+SpeechRecognition = webkitSpeechRecognition || SpeechRecognition;
+if (!'SpeechRecognition' in window) {
+    alert("あなたのブラウザはSpeech Recognition APIに未対応です。");
+}
+
+const asr = new SpeechRecognition(); // ASRインスタンスを生成
+asr.lang = "ja-JP"; // 言語（日本語）
+asr.interimResults = true; // 途中結果出力をオン
+asr.continuous = true; // 継続入力をオン
+
+let output = ''; // 出力
+
+// 認識結果が出力されたときのイベントハンドラ
+asr.onresult = function(event) {
+    let transcript = event.results[event.resultIndex][0].transcript.trim(); // 結果文字列を取得
+
+    if (event.results[event.resultIndex].isFinal) { 
+        output += transcript + '<br>';
+        let foundResponse = false;
+
+        let keys = Object.keys(response);
+        keys.forEach(function(key) {
+            let flag = true;
+            key.split(',').forEach(function(word) {              
+                let pattern = new RegExp(word);
+                let flag_test = pattern.test(transcript); // マッチしたらtrue, しなかったらfalse
+                flag = flag && flag_test; // 両方trueならtrue
+            });
+
+            if(flag){
+                tts.text = response[key];
+                speechSynthesis.speak(tts); // 応答を再生
+                output += '<span style="color:#f00;">' + response[key] + '</span><br>';
+                foundResponse = true;
+            }
+        });
+
+        if (!foundResponse) {
+            tts.text = "すみません、わかりません";
+            speechSynthesis.speak(tts); // デフォルトの応答を再生
+            output += '<span style="color:#f00;">すみません、よくわかりません</span><br>';
+        }
+
+        resultOutput.innerHTML = output;
+        asr.start(); // 音声認識を再開
+    }
+};
+
+// 開始ボタンのイベントハンドラ
+startButton.addEventListener('click', function() {
+    asr.start();
+})
+
+// 停止ボタンのイベントハンドラ
+stopButton.addEventListener('click', function() {
+    asr.stop();
+})
+
+// 表示を整える
+resultOutput.style.fontSize = "20px";
+resultOutput.style.lineHeight = "1.5em";
+resultOutput.style.width = "100%-20px";
+resultOutput.style.height = "500px";
+resultOutput.style.overflow = "auto";
+resultOutput.style.border = "1px solid #000";
+resultOutput.style.padding = "10px";
+resultOutput.style.backgroundColor = "#f0f0f0";
+document.body.style.backgroundColor = "e0dad5";
+document.querySelector('h1').style.color = "#010038";
+document.querySelector('h1').style.textAlign = "center";
+
+// ボタンの見た目
+startButton.style.width = "100px";
+startButton.style.height = "50px";
+startButton.style.fontSize = "20px";
+startButton.style.backgroundColor = "#33ff94";
+startButton.style.color = "#000000";
+startButton.style.border = "1px solid #000";
+startButton.style.borderRadius = "10px";
+startButton.style.margin = "10px";
+stopButton.style.width = "100px";
+stopButton.style.height = "50px";
+stopButton.style.fontSize = "20px";
+stopButton.style.backgroundColor = "#ff4632";
+stopButton.style.color = "#000000";
+stopButton.style.border = "1px solid #000";
+stopButton.style.borderRadius = "10px";
+stopButton.style.margin = "10px";
+document.querySelector('p').style.textAlign = "center";
+
+</script>
+
+</body>
+</html>
