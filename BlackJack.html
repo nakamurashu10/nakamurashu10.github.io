@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブラックジャック</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #game-board {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .hand {
+            border: 1px solid #000;
+            padding: 10px;
+            width: 200px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>ブラックジャック</h1>
+    <div id="game-board">
+        <div id="player-hand" class="hand">Player: </div>
+        <div id="dealer-hand" class="hand">Dealer: </div>
+    </div>
+    <button id="hit-button">ヒット</button>
+    <button id="stand-button">スタンド</button>
+    <button id="reset-button">リセット</button>
+    <p id="message"></p>
+
+    <script>
+        let playerHand = [];
+        let dealerHand = [];
+        let deck = [];
+
+        function createDeck() {
+            const suits = ['ハート', 'ダイヤ', 'クラブ', 'スペード'];
+            const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+            deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push(`${value} ${suit}`);
+                }
+            }
+        }
+
+        function getCardValue(card) {
+            const value = card.split(' ')[0];
+            if (value === 'A') return 11;
+            if (['K', 'Q', 'J'].includes(value)) return 10;
+            return parseInt(value);
+        }
+
+        function adjustForAces(hand) {
+            let total = hand.reduce((acc, card) => acc + getCardValue(card), 0);
+            let aceCount = hand.filter(card => card.startsWith('A')).length;
+            
+            while (total > 21 && aceCount > 0) {
+                total -= 10;
+                aceCount -= 1;
+            }
+            
+            return total;
+        }
+
+        function dealCard(hand) {
+            const card = deck.splice(Math.floor(Math.random() * deck.length), 1)[0];
+            hand.push(card);
+        }
+
+        function startGame() {
+            playerHand = [];
+            dealerHand = [];
+            createDeck();
+            dealCard(playerHand);
+            dealCard(playerHand);
+            dealCard(dealerHand);
+            dealCard(dealerHand);
+            updateGameBoard();
+            document.getElementById('message').innerText = '';
+            recognition.start();
+        }
+
+        function updateGameBoard() {
+            document.getElementById('player-hand').innerText = `Player: ${playerHand.join(', ')}`;
+            document.getElementById('dealer-hand').innerText = `Dealer: ${dealerHand.join(', ')}`;
+        }
+
+        function checkWinner() {
+            const playerScore = adjustForAces(playerHand);
+            const dealerScore = adjustForAces(dealerHand);
+            let message = '';
+
+            if (playerScore > 21) {
+                message = 'プレイヤーの負け！バーストしました。';
+            } else if (dealerScore > 21) {
+                message = 'プレイヤーの勝ち！ディーラーがバーストしました。';
+            } else if (playerScore > dealerScore) {
+                message = 'プレイヤーの勝ち！';
+            } else if (playerScore < dealerScore) {
+                message = 'プレイヤーの負け！';
+            } else {
+                message = '引き分け！';
+            }
+
+            document.getElementById('message').innerText = message;
+        }
+
+        document.getElementById('hit-button').addEventListener('click', () => {
+            dealCard(playerHand);
+            updateGameBoard();
+        });
+
+        document.getElementById('stand-button').addEventListener('click', () => {
+            while (adjustForAces(dealerHand) < 17) {
+                dealCard(dealerHand);
+            }
+            updateGameBoard();
+            checkWinner();
+        });
+
+        document.getElementById('reset-button').addEventListener('click', () => {
+            startGame();
+        });
+
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ja-JP';
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            if (transcript.includes('ヒット')) {
+                dealCard(playerHand);
+                updateGameBoard();
+                if (adjustForAces(playerHand) > 21) {
+                    checkWinner();
+                    recognition.stop(); // ゲームオーバー時に音声認識を停止
+                } else {
+                    recognition.start(); // 継続する場合に再開
+                }
+            } else if (transcript.includes('スタンド')) {
+                while (adjustForAces(dealerHand) < 17) {
+                    dealCard(dealerHand);
+                }
+                updateGameBoard();
+                checkWinner();
+                recognition.stop(); // ゲーム終了時に音声認識を停止
+            }
+        };
+
+        recognition.onend = () => {
+            recognition.start();
+        };
+
+        startGame();
+    </script>
+</body>
+</html>
