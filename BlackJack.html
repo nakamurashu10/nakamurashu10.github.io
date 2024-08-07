@@ -37,6 +37,7 @@
     <button id="stand-button">スタンド</button>
     <button id="reset-button">リセット</button>
     <p id="message"></p>
+    <p id="score"></p>
 
     <script>
         let playerHand = [];
@@ -94,6 +95,13 @@
         function updateGameBoard() {
             document.getElementById('player-hand').innerText = `Player: ${playerHand.join(', ')}`;
             document.getElementById('dealer-hand').innerText = `Dealer: ${dealerHand.join(', ')}`;
+            updateScores(); // スコアの表示を更新
+        }
+
+        function updateScores() {
+            const playerScore = adjustForAces(playerHand);
+            const dealerScore = adjustForAces(dealerHand);
+            document.getElementById('score').innerText = `Player Score: ${playerScore} | Dealer Score: ${dealerScore}`;
         }
 
         function checkWinner() {
