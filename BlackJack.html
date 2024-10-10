@@ -128,6 +128,10 @@
         document.getElementById('hit-button').addEventListener('click', () => {
             dealCard(playerHand);
             updateGameBoard();
+            // スコアが21を超えた場合は勝敗を判定
+            if (adjustForAces(playerHand) > 21) {
+                checkWinner();
+            }
         });
 
         document.getElementById('stand-button').addEventListener('click', () => {
